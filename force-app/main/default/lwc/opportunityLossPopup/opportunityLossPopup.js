@@ -111,6 +111,19 @@ export default class OpportunityLossPopup extends NavigationMixin(LightningEleme
         this.lossReason = event.detail.value;
         console.log('✅ Updated Loss Reason:', this.lossReason);
         this.showCompetitorSection = this.lossReason.toLowerCase() === 'competition';
+
+        if (this.showCompetitorSection) {
+            // Fetch competitors if the Loss Reason is "Competition"
+            getRelatedCompetitors({ opportunityId: this.recordId })
+                .then(data => {
+                    this.competitors = data;
+                    console.log('✅ Fetched Competitors:', this.competitors);
+                })
+                .catch(error => {
+                    console.error('❌ Error fetching competitors:', error);
+                    this.competitors = [];
+                });
+        }
     }
 
     // ✅ Handle Loss Explanation Change
@@ -124,7 +137,7 @@ export default class OpportunityLossPopup extends NavigationMixin(LightningEleme
         console.log('➡️ Loss Reason:', this.lossReason);
         console.log('➡️ Loss Explanation:', this.lossExplanation);
 
-        if (!this.lossReason || !this.lossExplanation) {
+        if (!this.lossReason || !this.lossExplanation || (this.showCompetitorSection && this.competitors.length === 0)) {
             this.dispatchEvent(
                 new ShowToastEvent({
                     title: 'Error',
@@ -138,7 +151,7 @@ export default class OpportunityLossPopup extends NavigationMixin(LightningEleme
         const fields = {
             Id: this.recordId,
             Loss_Reason__c: this.lossReason,
-            Loss_Explanation__c: this.lossExplanation
+            Loss_Reason_Explanation__c: this.lossExplanation
         };
 
         updateRecord({ fields }).then(() => {
