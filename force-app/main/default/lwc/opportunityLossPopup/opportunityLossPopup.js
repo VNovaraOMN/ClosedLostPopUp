@@ -1,6 +1,6 @@
 import { LightningElement, api, track, wire } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
-import { getRecord, updateRecord, createRecord, deleteRecord } from 'lightning/uiRecordApi';
+import { getRecord, updateRecord, deleteRecord } from 'lightning/uiRecordApi';
 import { getFieldValue } from 'lightning/uiRecordApi';
 import { refreshApex } from '@salesforce/apex';
 import { NavigationMixin } from 'lightning/navigation';
@@ -25,12 +25,16 @@ export default class OpportunityLossPopup extends NavigationMixin(LightningEleme
     wiredCompetitorsResult;
     hasOpenedModal = false;
 
+    // ✅ Grey out "Add Competitor" button if fields are not filled
+    get isAddCompetitorDisabled() {
+        return !this.lossReason || !this.lossExplanation;
+    }
+
     // ✅ Set aria-hidden state only when hidden
     get ariaHiddenState() {
         return this.showModal ? null : 'true';
     }
 
-    // ✅ Define table columns
     competitorColumns = [
         { label: 'Competitor Name', fieldName: 'Name', editable: false },
         {
@@ -40,7 +44,8 @@ export default class OpportunityLossPopup extends NavigationMixin(LightningEleme
                 iconName: 'utility:delete',
                 title: 'Delete',
                 variant: 'border-filled',
-                alternativeText: 'Delete'
+                alternativeText: 'Delete',
+                name: 'delete'
             }
         }
     ];
@@ -85,10 +90,6 @@ export default class OpportunityLossPopup extends NavigationMixin(LightningEleme
             const lossReasonValue = getFieldValue(data, LOSS_REASON_FIELD);
             const lossExplanationValue = getFieldValue(data, LOSS_EXPLANATION_FIELD);
 
-            console.log('➡️ Stage:', stageValue);
-            console.log('➡️ Loss Reason:', lossReasonValue);
-            console.log('➡️ Loss Explanation:', lossExplanationValue);
-
             if (
                 stageValue === '10. Closed Lost' &&
                 (!lossReasonValue || !lossExplanationValue) &&
@@ -111,18 +112,14 @@ export default class OpportunityLossPopup extends NavigationMixin(LightningEleme
         this.showCompetitorSection = this.lossReason.toLowerCase() === 'competition';
 
         if (this.showCompetitorSection) {
-            getRelatedCompetitors({ opportunityId: this.recordId })
-                .then(data => {
-                    this.competitors = data;
-                    this.hasCompetitors = data.length > 0;
-                    console.log('✅ Fetched Competitors:', this.competitors);
-                })
-                .catch(error => {
-                    console.error('❌ Error fetching competitors:', error);
-                    this.competitors = [];
-                    this.hasCompetitors = false;
-                });
+            this.refreshCompetitors();
         }
+    }
+
+    // ✅ Refresh Competitors List
+    refreshCompetitors() {
+        console.log('🔄 Refreshing competitors...');
+        refreshApex(this.wiredCompetitorsResult);
     }
 
     // ✅ Handle Loss Explanation Change
@@ -161,12 +158,12 @@ export default class OpportunityLossPopup extends NavigationMixin(LightningEleme
                 })
             );
 
-            // ✅ Refresh related data after save
+            // ✅ Refresh competitors after save
             return refreshApex(this.wiredCompetitorsResult);
         });
     }
 
-    // ✅ Launch Quick Action to Create Competitor
+    // ✅ Create Competitor
     handleAddCompetitor() {
         console.log('✅ Opening Competitor Quick Action...');
         this[NavigationMixin.Navigate]({
@@ -179,10 +176,18 @@ export default class OpportunityLossPopup extends NavigationMixin(LightningEleme
                 defaultFieldValues: `Opportunity__c=${this.recordId}`
             }
         });
+
+        // ✅ Automatically save once competitor is created
+        setTimeout(() => {
+            this.refreshCompetitors();
+            this.handleSave();
+        }, 2000);
     }
 
+    // ✅ Handle Cancel Action
     handleCancel() {
         this.showModal = false;
         this.hasOpenedModal = false;
     }
 }
+

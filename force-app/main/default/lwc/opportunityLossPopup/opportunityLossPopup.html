@@ -1,40 +1,70 @@
 <template>
     <template if:true={showModal}>
-        <div class="slds-modal slds-fade-in-open" aria-hidden={ariaHiddenState}>
+        <!-- ✅ Fix for non-blocking modal behavior -->
+        <div class="slds-modal slds-fade-in-open" tabindex="-1" style="z-index: 10000; pointer-events: auto;">
             <div class="slds-modal__container">
+                
+                <!-- ✅ Modal Header -->
                 <header class="slds-modal__header">
+                    <button class="slds-button slds-modal__close" title="Close" onclick={handleCancel}>
+                        <lightning-icon icon-name="utility:close" alternative-text="Close" size="small"></lightning-icon>
+                    </button>
                     <h2 class="slds-text-heading_medium">Closed Lost Details</h2>
                 </header>
-    
+
+                <!-- ✅ Modal Body -->
                 <div class="slds-modal__content slds-p-around_medium">
+                    <!-- ✅ Loss Reason -->
                     <lightning-combobox
                         label="Loss Reason"
                         value={lossReason}
                         options={lossReasonOptions}
-                        onchange={handleLossReasonChange}>
+                        onchange={handleLossReasonChange}
+                        required>
                     </lightning-combobox>
-    
+
+                    <!-- ✅ Loss Explanation -->
                     <lightning-textarea
                         label="Loss Explanation"
                         value={lossExplanation}
-                        onchange={handleLossExplanationChange}>
+                        onchange={handleLossExplanationChange}
+                        required>
                     </lightning-textarea>
-    
-                    <!-- ✅ Show competitors if available -->
+
+                    <!-- ✅ Show Competitor List if Available -->
                     <template if:true={hasCompetitors}>
-                        <lightning-datatable key-field="Id" data={competitors} columns={competitorColumns}>
+                        <lightning-datatable
+                            key-field="Id"
+                            data={competitors}
+                            columns={competitorColumns}
+                            onrowaction={handleRowAction}
+                            hide-checkbox-column>
                         </lightning-datatable>
                     </template>
-    
-                    <!-- ✅ Show Add Competitor Button if no competitors -->
-                    <template if:false={hasCompetitors}>
-                        <lightning-button label="Add Competitor" variant="brand" onclick={handleAddCompetitor}>
+
+                    <!-- ✅ Show Add Competitor Button Only for Loss Reason = "Competitor" -->
+                    <template if:true={showCompetitorSection}>
+                        <div class="slds-m-top_medium">
+                            <lightning-button
+                            label="Add Competitor"
+                            variant="brand"
+                            onclick={handleAddCompetitor}
+                            disabled={isAddCompetitorDisabled}>
                         </lightning-button>
+                        </div>
                     </template>
                 </div>
+
+                <!-- ✅ Modal Footer (Fixed Button Display) -->
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Cancel" onclick={handleCancel}></lightning-button>
+                    <lightning-button label="Save" variant="brand" onclick={handleSave}></lightning-button>
+                </footer>
             </div>
         </div>
+
+        <!-- ✅ Background Blur Overlay -->
+        <div class="slds-backdrop slds-backdrop_open" style="z-index: 9999;"></div>
     </template>
-    
-     
 </template>
+
