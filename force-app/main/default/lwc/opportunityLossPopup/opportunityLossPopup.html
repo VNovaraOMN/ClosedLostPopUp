@@ -1,8 +1,6 @@
 <template>
     <template if:true={showModal}>
-        <div class="slds-modal slds-fade-in-open"
-            aria-hidden={ariaHiddenState}>
-    
+        <div class="slds-modal slds-fade-in-open" aria-hidden={ariaHiddenState}>
             <div class="slds-modal__container">
                 <header class="slds-modal__header">
                     <h2 class="slds-text-heading_medium">Closed Lost Details</h2>
@@ -16,20 +14,27 @@
                         onchange={handleLossReasonChange}>
                     </lightning-combobox>
     
-                    <lightning-textarea 
-                        label="Loss Explanation" 
+                    <lightning-textarea
+                        label="Loss Explanation"
                         value={lossExplanation}
                         onchange={handleLossExplanationChange}>
                     </lightning-textarea>
-                </div>
     
-                <footer class="slds-modal__footer">
-                    <lightning-button label="Cancel" onclick={handleCancel}></lightning-button>
-                    <lightning-button label="Save" variant="brand" onclick={handleSave}></lightning-button>
-                </footer>
+                    <!-- ✅ Show competitors if available -->
+                    <template if:true={hasCompetitors}>
+                        <lightning-datatable key-field="Id" data={competitors} columns={competitorColumns}>
+                        </lightning-datatable>
+                    </template>
+    
+                    <!-- ✅ Show Add Competitor Button if no competitors -->
+                    <template if:false={hasCompetitors}>
+                        <lightning-button label="Add Competitor" variant="brand" onclick={handleAddCompetitor}>
+                        </lightning-button>
+                    </template>
+                </div>
             </div>
         </div>
-        <div class="slds-backdrop slds-backdrop_open"></div>
     </template>
+    
      
 </template>

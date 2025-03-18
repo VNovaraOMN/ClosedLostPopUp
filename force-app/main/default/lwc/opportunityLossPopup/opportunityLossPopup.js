@@ -12,10 +12,6 @@ import STAGE_FIELD from '@salesforce/schema/Opportunity.StageName';
 import LOSS_REASON_FIELD from '@salesforce/schema/Opportunity.Loss_Reason__c';
 import LOSS_EXPLANATION_FIELD from '@salesforce/schema/Opportunity.Loss_Reason_Explanation__c';
 
-import OMN_COMPETITOR_OBJECT from '@salesforce/schema/OMN_Competitors__c';
-import OPPORTUNITY_FIELD from '@salesforce/schema/OMN_Competitors__c.Opportunity__c';
-import NAME_FIELD from '@salesforce/schema/OMN_Competitors__c.Name';
-
 export default class OpportunityLossPopup extends NavigationMixin(LightningElement) {
     @api recordId;
     @track showModal = false;
@@ -24,7 +20,7 @@ export default class OpportunityLossPopup extends NavigationMixin(LightningEleme
     @track lossReasonOptions = [];
     @track competitors = [];
     @track showCompetitorSection = false;
-    @track newCompetitorName = '';
+    @track hasCompetitors = false;
 
     wiredCompetitorsResult;
     hasOpenedModal = false;
@@ -36,7 +32,7 @@ export default class OpportunityLossPopup extends NavigationMixin(LightningEleme
 
     // ✅ Define table columns
     competitorColumns = [
-        { label: 'Competitor Name', fieldName: 'Name', editable: true },
+        { label: 'Competitor Name', fieldName: 'Name', editable: false },
         {
             type: 'button-icon',
             fixedWidth: 50,
@@ -72,10 +68,12 @@ export default class OpportunityLossPopup extends NavigationMixin(LightningEleme
         this.wiredCompetitorsResult = result;
         if (result.data) {
             this.competitors = result.data;
+            this.hasCompetitors = result.data.length > 0;
             console.log('✅ Fetched Competitors:', this.competitors);
         } else if (result.error) {
             console.error('❌ Error fetching competitors:', result.error);
             this.competitors = [];
+            this.hasCompetitors = false;
         }
     }
 
@@ -113,15 +111,16 @@ export default class OpportunityLossPopup extends NavigationMixin(LightningEleme
         this.showCompetitorSection = this.lossReason.toLowerCase() === 'competition';
 
         if (this.showCompetitorSection) {
-            // Fetch competitors if the Loss Reason is "Competition"
             getRelatedCompetitors({ opportunityId: this.recordId })
                 .then(data => {
                     this.competitors = data;
+                    this.hasCompetitors = data.length > 0;
                     console.log('✅ Fetched Competitors:', this.competitors);
                 })
                 .catch(error => {
                     console.error('❌ Error fetching competitors:', error);
                     this.competitors = [];
+                    this.hasCompetitors = false;
                 });
         }
     }
@@ -134,10 +133,7 @@ export default class OpportunityLossPopup extends NavigationMixin(LightningEleme
     // ✅ Save Handler
     handleSave() {
         console.log('✅ Attempting to Save...');
-        console.log('➡️ Loss Reason:', this.lossReason);
-        console.log('➡️ Loss Explanation:', this.lossExplanation);
-
-        if (!this.lossReason || !this.lossExplanation || (this.showCompetitorSection && this.competitors.length === 0)) {
+        if (!this.lossReason || !this.lossExplanation) {
             this.dispatchEvent(
                 new ShowToastEvent({
                     title: 'Error',
@@ -167,6 +163,21 @@ export default class OpportunityLossPopup extends NavigationMixin(LightningEleme
 
             // ✅ Refresh related data after save
             return refreshApex(this.wiredCompetitorsResult);
+        });
+    }
+
+    // ✅ Launch Quick Action to Create Competitor
+    handleAddCompetitor() {
+        console.log('✅ Opening Competitor Quick Action...');
+        this[NavigationMixin.Navigate]({
+            type: 'standard__objectPage',
+            attributes: {
+                objectApiName: 'OMN_Competitors__c',
+                actionName: 'new'
+            },
+            state: {
+                defaultFieldValues: `Opportunity__c=${this.recordId}`
+            }
         });
     }
 
