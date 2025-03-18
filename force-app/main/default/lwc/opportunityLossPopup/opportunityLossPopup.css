@@ -1,0 +1,23 @@
+.slds-modal {
+    display: block !important;
+    opacity: 1 !important;
+}
+
+.slds-modal__container {
+    z-index: 7000;
+}
+
+.slds-backdrop_open {
+    z-index: 6999;
+}
+
+/* ✅ Disable interaction only when hidden */
+[aria-hidden="true"] {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+[aria-hidden="false"] {
+    visibility: visible;
+    pointer-events: auto;
+}
